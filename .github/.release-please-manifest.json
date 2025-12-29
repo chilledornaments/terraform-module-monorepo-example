@@ -1,4 +1,4 @@
 {
-  "terraform-aws-foo": "0.0.0",
+  "terraform-aws-foo": "0.1.0",
   "terraform-aws-bar": "0.0.0"
 }

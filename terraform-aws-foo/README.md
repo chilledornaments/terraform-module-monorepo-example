@@ -6,7 +6,7 @@
 
 ```hcl
 module "bar" {
-  source = "git::ssh://git@github.com/chilledornaments/terraform-module-monorepo-example.git//terraform-aws-foo?ref=terraform-aws-foo-v<!-- x-release-please-version -->0.0.0<!-- /x-release-please-end -->"
+  source = "git::ssh://git@github.com/chilledornaments/terraform-module-monorepo-example.git//terraform-aws-foo?ref=terraform-aws-foo-v<!-- x-release-please-version -->0.1.0<!-- /x-release-please-end -->"
 }
 ```
 
