@@ -1,0 +1,138 @@
+name: "Terraform Module Pull Request Actions"
+
+on:
+  pull_request:
+    paths:
+      - "terraform-*/*.tf"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: terraform-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detected changed modules
+    runs-on: ubuntu-latest
+
+    outputs:
+      modules: ${{ steps.changed.outputs.all_changed_files }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: "0"
+
+      - name: Get changed module directories
+        id: changed
+        uses: "tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891" # 47.0.1
+        with:
+          files: |
+            terraform-*/*.tf
+          dir_names: true
+          json: true
+          quotepath: false
+          matrix: true
+          since_last_remote_commit: ${{ github.event_name == 'push' && 'true' || 'false' }}
+
+  tests:
+    name: "Terraform test: ${{ matrix.module }}"
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.modules != '[]' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.detect-changes.outputs.modules) }}
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "0"
+      TF_PLUGIN_CACHE_DIR: "~/.terraform.d/plugin-cache"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # 3.1.2
+        with:
+          terraform_version: "~1.11.0"
+
+      - name: Create plugin cache dir
+        run: mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+
+      - name: Init (no backend)
+        run: terraform init -backend=false -no-color
+
+      - name: Run tests
+        run: terraform test -no-color
+
+  fmt-and-docs:
+    name: "Format and documentation"
+    needs:
+    - detect-changes
+    - tests
+
+    if: ${{ needs.detect-changes.outputs.modules != '[]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # 3.1.2
+        with:
+          terraform_version: "~1.11.0"
+
+      - name: Install terraform-docs
+        run: |
+          set -euo pipefail
+          TFDOCS_VERSION="v0.20.0"
+          curl -sSLo /tmp/terraform-docs.tar.gz \
+            "https://terraform-docs.io/dl/${TFDOCS_VERSION}/terraform-docs-${TFDOCS_VERSION}-$(uname)-amd64.tar.gz"
+          tar -xzf /tmp/terraform-docs.tar.gz -C /tmp terraform-docs
+          chmod +x /tmp/terraform-docs
+          sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
+
+      - name: Run terraform fmt + terraform-docs
+        env:
+          MODULES_JSON: ${{ needs.detect-changes.outputs.modules }}
+        run: |
+          set -euo pipefail
+          echo "${MODULES_JSON}" | jq -r '.[]' | while read -r dir; do
+            echo "=== fmt: ${dir}"
+            (cd "${dir}" && terraform fmt -recursive)
+
+            echo "=== terraform-docs: ${dir}"
+            (cd "${dir}" && terraform-docs .)
+          done
+
+      - name: Commit & push changes
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No fmt/docs changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: terraform fmt + terraform-docs"
+          git push

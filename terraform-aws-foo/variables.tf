@@ -1,0 +1,3 @@
+variable "blah" {
+  type = string
+}

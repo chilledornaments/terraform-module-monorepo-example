@@ -1,0 +1,40 @@
+{
+  "include-v-in-tag": true,
+  "include-component-in-tag": true,
+  "separate-pull-requests": true,
+  "pull-request-title-pattern": "chore(${component}): bump to version ${version}",
+  "component-no-space": true,
+  "bump-minor-pre-major": true,
+  "skip-github-release": false,
+  "tag-separator": "-",
+
+  "changelog-sections": [
+    {"type":"feat","section":"Features"},
+    {"type":"fix","section":"Fixes"},
+    {"type":"perf","section":"Performance"},
+    {"type":"refactor","section":"Refactoring"},
+    {"type":"docs","section":"Docs"},
+    {"type":"chore","section":"Chores"},
+    {"type":"breaking","section":"BREAKING CHANGES"}
+  ],
+
+  "packages": {
+    "terraform-aws-foo": {
+      "release-type": "terraform-module",
+      "package-name": "terraform-aws-foo",
+      "extra-files": [
+        "VERSION",
+        "README.md"
+      ]
+    },
+    "terraform-aws-bar": {
+      "release-type": "terraform-module",
+      "package-name": "terraform-aws-bar",
+      "component": "terraform-aws-bar",
+      "extra-files": [
+        "VERSION",
+        "README.md"
+      ]
+    }
+  }
+}
