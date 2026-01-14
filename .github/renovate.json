@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  "enabledManagers": ["terraform"],
+  "includePaths": ["terraform-aws-*/**"],
+
+  "labels": ["dependencies", "terraform"],
+  "prConcurrentLimit": 20,
+
+  "timezone": "America/Denver",
+  "schedule": ["* 9-10 * * 1"],
+
+  "packageRules": [
+    {
+      "matchManagers": ["terraform"],
+
+      "commitMessage": "{{#if isMajor}}feat!{{else}}{{#if isMinor}}feat{{else}}chore{{/if}}{{/if}}(deps): update {{parentDir}}",
+      "prTitle": "{{#if isMajor}}feat!{{else}}{{#if isMinor}}feat{{else}}chore{{/if}}{{/if}}(deps): update {{parentDir}}"
+    }
+  ]
+}
+
