@@ -15,7 +15,7 @@
     {
       "matchManagers": ["terraform"],
 
-      "commitMessagePrefix": "{{#if isMajor}}feat!(deps):{{else}}{{#if isMinor}}feat(deps):{{else}}chore(deps):{{/if}}{{/if}}",
+      "commitMessagePrefix": "{{#if isMajor}}feat!:{{else}}{{#if isMinor}}feat:{{else}}chore:{{/if}}{{/if}}",
       "commitMessageAction": "update",
       "commitMessageTopic": "{{parentDir}}",
 
